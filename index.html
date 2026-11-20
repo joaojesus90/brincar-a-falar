@@ -135,6 +135,7 @@ textarea{min-height:90px;resize:vertical}
 .word{font-family:var(--display);font-weight:800;text-align:center;overflow-wrap:anywhere;text-wrap:balance;margin:0;line-height:1.05;font-size:clamp(2.4rem,9vh,4.6rem)}
 .word.phrase{font-size:clamp(1.5rem,5.4vh,2.6rem);line-height:1.25;max-width:26ch}
 .word.text{font-family:var(--body);font-weight:400;font-size:clamp(1.1rem,3.2vh,1.45rem);text-align:left;line-height:1.75;max-width:62ch;overflow:auto;min-height:0}
+body.no-hl mark{background:none!important;color:inherit!important;box-shadow:none!important;padding:0!important}
 mark{background:var(--sun-soft);color:#A52A16;border-radius:6px;padding:0 .05em;box-shadow:inset 0 -.16em 0 var(--sun)}
 
 .choices{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:clamp(10px,2vw,22px);width:100%;max-width:980px}
@@ -1183,6 +1184,11 @@ function soundsSeg(){
       ENGINES[G.game].controls(); startRound();
     }};
 }
+/* Destacar a letra do som nas palavras (guardado neste aparelho) */
+let hl = true; try { hl = localStorage.getItem("baf-hl") !== "off"; } catch (e) {}
+document.body.classList.toggle("no-hl", !hl);
+function hlSeg(){ return seg("Destacar o som nas palavras", "hl", [["sim","Destacar"],["nao","Sem destaque"]], hl ? "sim" : "nao", v => {
+  hl = v === "sim"; document.body.classList.toggle("no-hl", !hl); try { localStorage.setItem("baf-hl", hl ? "on" : "off"); } catch (e) {} }); }
 const soundList = keys => { const t = keys.map(k => P[k].tag); return t.length > 1 ? `${t.slice(0, -1).join(", ")} ou ${t[t.length - 1]}` : t[0]; };
 
 /* ---------- 1. Treino de Sons ---------- */
@@ -1202,7 +1208,7 @@ ENGINES.sons = {
   controls(){
     const o = this.o; let groups = [];
     sel.forEach(k => Object.keys(P[k].w).forEach(g => { if (!groups.includes(g)) groups.push(g); }));
-    const list = [soundsSeg(), seg("O que treinar", "tab", [["palavras","Palavras"],["frases","Frases"],["trava","Trava-línguas"],["texto","Texto"]], o.tab, v => { o.tab = v; o.group = ""; this.controls(); startRound(); })];
+    const list = [soundsSeg(), hlSeg(), seg("O que treinar", "tab", [["palavras","Palavras"],["frases","Frases"],["trava","Trava-línguas"],["texto","Texto"]], o.tab, v => { o.tab = v; o.group = ""; this.controls(); startRound(); })];
     if (o.tab === "palavras") list.push(seg("Posição do som", "group", [["","Todas"], ...groups.map(g => [g, g])], o.group, v => { o.group = v; startRound(); }));
     drawerControls(list);
   },
@@ -1368,7 +1374,7 @@ ENGINES.memoria = {
     if (words.length < n) { add(Object.keys(P)); words = words.concat(shuffle(pool.filter(w => !words.includes(w)))); }
     return words.slice(0, n);
   },
-  controls(){ drawerControls([soundsSeg(), seg("Número de pares", "pairs", [["4","4 pares"],["6","6 pares"],["8","8 pares"]], this.o.pairs, v => { this.o.pairs = v; startRound(); })]); },
+  controls(){ drawerControls([soundsSeg(), hlSeg(), seg("Número de pares", "pairs", [["4","4 pares"],["6","6 pares"],["8","8 pares"]], this.o.pairs, v => { this.o.pairs = v; startRound(); })]); },
   render(){
     if (G.i > 0) return;
     const words = G.items, n = words.length;
