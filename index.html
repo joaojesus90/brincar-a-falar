@@ -118,7 +118,7 @@ textarea{min-height:90px;resize:vertical}
 .hold svg.ring{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px);transform:rotate(-90deg);pointer-events:none}
 .hold svg.ring circle{fill:none;stroke:var(--blue);stroke-width:5;stroke-dasharray:166;stroke-dashoffset:166}
 .hold.charging svg.ring circle{transition:stroke-dashoffset .7s linear;stroke-dashoffset:0}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 20px;font-size:.95rem;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:10px 20px;font-size:.95rem;z-index:40;box-shadow:0 8px 24px rgba(0,0,0,.2)}
 
 .g-stage{position:relative;flex:1;min-height:0;background:var(--paper);border-radius:var(--r-lg);border:4px solid var(--sun);box-shadow:0 8px 0 var(--sun-d);display:flex;flex-direction:column;overflow:hidden}
 .guide{display:flex;align-items:center;gap:12px;padding:12px 16px 0;min-height:0}
@@ -333,6 +333,32 @@ body:not(.casa) .c-only{display:none!important}
 .linkbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .linkbox input{flex:1;min-width:220px;font:inherit;font-size:calc(.92rem*var(--ts));border:2px solid var(--line);border-radius:12px;padding:9px 12px;min-height:48px;background:var(--soft);color:var(--ink)}
 .nowords .w{display:none!important}
+.ready{position:absolute;inset:0;overflow:auto;justify-content:safe center;border-radius:calc(var(--r-lg) - 4px);z-index:8}
+.endscreen{overflow:auto;justify-content:safe center}
+@media (max-width:600px),(max-height:620px){
+  .ready{gap:10px;padding:12px}
+  .ready .target{font-size:1.4rem}.ready .target .tw{font-size:44px}
+  .ready p{font-size:1rem!important}
+  .levels{gap:8px;width:100%}
+  .level{min-width:0;flex:1 1 0;min-height:76px;padding:6px 4px;font-size:1rem}
+  .level .tw{font-size:30px}.level small{display:none}
+  .btn.big{min-height:56px;font-size:1.15rem;padding:8px 18px 6px}
+  .endscreen{gap:10px;padding:14px}
+  .endscreen .mascot{width:90px}
+  .endscreen h2{font-size:1.8rem}
+  .endscreen .earned{font-size:28px}
+  .count{gap:2px 12px;font-size:.88rem;justify-content:center}
+  .therbar{padding:6px 8px;gap:6px}
+}
+@media (max-height:450px){
+  .ready p{display:none}
+  .ready .target{font-size:1.15rem}.ready .target .tw{font-size:32px}
+  .level{min-height:54px;flex-direction:row;gap:6px}
+  .endscreen .mascot{display:none}
+  .endscreen h2{font-size:1.4rem}
+  .btn.big{min-height:50px}
+  .drawer{gap:8px}
+}
 .sendbox{background:var(--green-soft);border:3px solid var(--green);border-radius:var(--r-md);padding:18px;display:flex;flex-direction:column;gap:12px}
 .sendbox h3{font-size:calc(1.35rem*var(--ts));color:var(--green-d);display:flex;align-items:center;gap:8px}
 .sendbox h3 .tw{font-size:1.3em}
@@ -1242,7 +1268,7 @@ function openGame(id){
   show("game"); startRound();
 }
 function startRound(){
-  G.token++; const E = ENGINES[G.game]; $("#body").classList.remove("nowords");
+  G.token++; const E = ENGINES[G.game]; $("#body").classList.remove("nowords"); document.querySelectorAll("#stage > .ready").forEach(x => x.remove());
   G.items = E.build(); G.i = 0; G.res = [];
   $("#end").hidden = true; renderDots(); E.render(G.items[0]);
 }
@@ -1569,15 +1595,16 @@ ENGINES.toupeira = {
     const rows = Math.ceil(L.holes / cols);
     const b = body(`<div class="garden" style="grid-template-columns:repeat(${cols},minmax(0,1fr));grid-template-rows:repeat(${rows},minmax(0,1fr))">
       ${Array.from({length:L.holes}, (_, i) => `<div class="scene" data-h="${i}"><div class="mound"></div><div class="pit"></div><div class="win"><button class="mole" tabindex="-1" aria-hidden="true"></button></div><div class="front"></div></div>`).join("")}
+    </div>`);
+    $("#stage").insertAdjacentHTML("beforeend", `
       <div class="ready" id="ready">
         <div class="target">${keys.map(k => ic(P[k].pic)).join("")} ${keys.length > 1 ? "Sons" : "Som"} ${esc(keys.map(k => P[k].tag).join(" · "))}</div>
         <p style="margin:0;font-size:1.1rem">Bate só nas toupeiras que têm ${keys.length > 1 ? "um destes sons" : "este som"} e diz o nome!</p>
         ${others.length < 6 ? `<p class="hint">Com estes sons juntos, há poucas imagens sem nenhum deles, por isso vão aparecer sobretudo toupeiras certas.</p>` : ""}
         <div class="levels">${Object.entries(MOLE_LEVELS).map(([k, l]) => `<button class="level" data-l="${k}" aria-pressed="${k === self.o.level}">${ic(l.icon)}${l.label}<small>${l.note}</small></button>`).join("")}</div>
         <button class="btn big primary" id="go">${ic("▶️")} Começar</button>
-      </div>
-    </div>`);
-    b.querySelectorAll(".level").forEach(x => x.onclick = () => { self.o.level = x.dataset.l; startRound(); });
+      </div>`);
+    $("#ready").querySelectorAll(".level").forEach(x => x.onclick = () => { self.o.level = x.dataset.l; startRound(); });
     const scene = i => b.querySelector(`.scene[data-h="${i}"]`);
     const hide = (i, delay) => later(() => {
       const m = scene(i).querySelector(".mole"); m.classList.add("going"); m.classList.remove("out");
@@ -1635,7 +1662,7 @@ function show(v){
   else if (v !== "home") { try { history.replaceState({baf:v}, "", "#" + (v === "game" ? "jogo" : "registo")); } catch (e) {} }
   view = v;
 }
-function goHomeView(){ G.token++; G.game = null; try { speechSynthesis.cancel(); } catch (e) {} view = "home"; show("home"); }
+function goHomeView(){ document.querySelectorAll("#stage > .ready").forEach(x => x.remove()); G.token++; G.game = null; try { speechSynthesis.cancel(); } catch (e) {} view = "home"; show("home"); }
 function goHome(){ if (view !== "home" && history.state && history.state.baf) { try { history.back(); return; } catch (e) {} } goHomeView(); }
 window.addEventListener("popstate", () => { if (view !== "home") goHomeView(); });
 try { if (location.hash) history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
