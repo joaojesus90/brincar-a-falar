@@ -1345,7 +1345,7 @@ function seg(label, key, options, current, onChange){
   return { html:`<span class="label">${label}</span><div class="seg" data-key="${key}">${options.map(([v,l]) => `<button data-v="${esc(v)}" aria-pressed="${String(v) === String(current)}">${l}</button>`).join("")}</div>`, key, onChange };
 }
 function drawerControls(list){
-  list = list.filter(Boolean).filter(x => !CASA || ["tab","mode","pairs","level"].includes(x.key));
+  list = list.filter(Boolean).filter(x => !CASA || ["tab","mode","pairs","level","words"].includes(x.key));
   const box = $("#dCtrl"); box.innerHTML = list.map(s => s.html).join("");
   list.forEach(s => box.querySelector(`[data-key="${s.key}"]`).querySelectorAll("button").forEach(b => b.onclick = () => {
     if (s.multi) return s.onChange(b.dataset.v, b);
@@ -1405,7 +1405,7 @@ ENGINES.sons = {
 
 /* ---------- 2. Qual é Qual? ---------- */
 ENGINES.pares = {
-  o:{mode:"ouve", filter:""},
+  o:{mode:"ouve", filter:"", words:(() => { try { return localStorage.getItem("baf-pares-words2") || "nao"; } catch (e) { return "nao"; } })()},
   build(){
     const pool = PAIRS.filter(p => !this.o.filter || p[4] === this.o.filter);
     return Array.from({length:8}, () => { const p = pick(pool), t = Math.random() < .5 ? 0 : 1; return {p, opts: shuffle([{w:p[0], e:p[1], t:t===0}, {w:p[2], e:p[3], t:t===1}])}; });
@@ -1414,10 +1414,12 @@ ENGINES.pares = {
     const c = [...new Set(PAIRS.map(p => p[4]))];
     drawerControls([
       seg("Modo", "mode", [["ouve","A criança ouve e aponta"],["diz","A criança diz"]], this.o.mode, v => { this.o.mode = v; startRound(); }),
-      seg("Contraste", "filter", [["","Todos"], ...c.map(x => [x, x])], this.o.filter, v => { this.o.filter = v; startRound(); })
+      seg("Contraste", "filter", [["","Todos"], ...c.map(x => [x, x])], this.o.filter, v => { this.o.filter = v; startRound(); }),
+      seg("Palavras nas imagens", "words", [["nao","Esconder"],["sim","Mostrar"]], this.o.words, v => { this.o.words = v; try { localStorage.setItem("baf-pares-words2", v); } catch (e) {} $("#body").classList.toggle("nowords", v === "nao"); })
     ]);
   },
   render(R){
+    $("#body").classList.toggle("nowords", this.o.words === "nao");
     const ouve = this.o.mode === "ouve", tw = R.opts.find(o => o.t).w, other = R.opts.find(o => !o.t).w;
     say(ouve ? "Ouve com atenção. Qual é?" : "Diz o nome da imagem com a estrela!", ouve ? "Ouve com atenção. Qual é?" : "Diz o nome da imagem com a estrela");
     body(`<div class="choices" style="--n:2;max-width:760px">${R.opts.map((o, i) => `<button class="choice pop ${!ouve && o.t ? "target" : ""}" data-i="${i}" aria-label="${esc(o.w)}">${!ouve && o.t ? `<span class="badge">${ic("⭐")}</span>` : ""}<span class="pic">${ic(o.e)}</span><span class="w">${esc(o.w)}</span></button>`).join("")}</div>`);
@@ -1439,11 +1441,11 @@ ENGINES.pares = {
 
 /* ---------- 3. Brincar com Sons ---------- */
 ENGINES.fono = {
-  o:{mode:"rima", words:(() => { try { return localStorage.getItem("baf-fono-words") || "sim"; } catch (e) { return "sim"; } })()},
+  o:{mode:"rima", words:(() => { try { return localStorage.getItem("baf-fono-words2") || "nao"; } catch (e) { return "nao"; } })()},
   build(){ const bank = {rima:RHYMES, silabas:SYLL, inicial:INITIAL}[this.o.mode]; return shuffle(bank).slice(0, 8); },
   controls(){ drawerControls([
     seg("Desafio", "mode", [["rima","Rimas"],["silabas","Sílabas"],["inicial","Som inicial"]], this.o.mode, v => { this.o.mode = v; startRound(); }),
-    seg("Palavras nas imagens", "words", [["sim","Mostrar"],["nao","Esconder"]], this.o.words, v => { this.o.words = v; try { localStorage.setItem("baf-fono-words", v); } catch (e) {} $("#body").classList.toggle("nowords", v === "nao"); })
+    seg("Palavras nas imagens", "words", [["nao","Esconder"],["sim","Mostrar"]], this.o.words, v => { this.o.words = v; try { localStorage.setItem("baf-fono-words2", v); } catch (e) {} $("#body").classList.toggle("nowords", v === "nao"); })
   ]); },
   render(q){
     $("#body").classList.toggle("nowords", this.o.words === "nao");
