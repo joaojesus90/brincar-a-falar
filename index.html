@@ -332,6 +332,7 @@ body:not(.casa) .c-only{display:none!important}
 .casabox ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px}
 .linkbox{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .linkbox input{flex:1;min-width:220px;font:inherit;font-size:calc(.92rem*var(--ts));border:2px solid var(--line);border-radius:12px;padding:9px 12px;min-height:48px;background:var(--soft);color:var(--ink)}
+.nowords .w{display:none!important}
 </style>
 </head>
 <body>
@@ -1212,7 +1213,7 @@ function openGame(id){
   show("game"); startRound();
 }
 function startRound(){
-  G.token++; const E = ENGINES[G.game];
+  G.token++; const E = ENGINES[G.game]; $("#body").classList.remove("nowords");
   G.items = E.build(); G.i = 0; G.res = [];
   $("#end").hidden = true; renderDots(); E.render(G.items[0]);
 }
@@ -1346,10 +1347,14 @@ ENGINES.pares = {
 
 /* ---------- 3. Brincar com Sons ---------- */
 ENGINES.fono = {
-  o:{mode:"rima"},
+  o:{mode:"rima", words:(() => { try { return localStorage.getItem("baf-fono-words") || "sim"; } catch (e) { return "sim"; } })()},
   build(){ const bank = {rima:RHYMES, silabas:SYLL, inicial:INITIAL}[this.o.mode]; return shuffle(bank).slice(0, 8); },
-  controls(){ drawerControls([seg("Desafio", "mode", [["rima","Rimas"],["silabas","Sílabas"],["inicial","Som inicial"]], this.o.mode, v => { this.o.mode = v; startRound(); })]); },
+  controls(){ drawerControls([
+    seg("Desafio", "mode", [["rima","Rimas"],["silabas","Sílabas"],["inicial","Som inicial"]], this.o.mode, v => { this.o.mode = v; startRound(); }),
+    seg("Palavras nas imagens", "words", [["sim","Mostrar"],["nao","Esconder"]], this.o.words, v => { this.o.words = v; try { localStorage.setItem("baf-fono-words", v); } catch (e) {} $("#body").classList.toggle("nowords", v === "nao"); })
+  ]); },
   render(q){
+    $("#body").classList.toggle("nowords", this.o.words === "nao");
     therbar("");
     let done = false;
     if (this.o.mode === "silabas"){
